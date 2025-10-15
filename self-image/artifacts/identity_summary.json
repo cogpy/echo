@@ -16,14 +16,14 @@
       ],
       "avg_confidence": 0.23605348086675948,
       "keywords": [
-        "i am",
-        "who i am",
-        "myself",
-        "identity",
         "echo",
-        "my",
         "deep tree echo",
-        "self"
+        "self",
+        "myself",
+        "i am",
+        "my",
+        "identity",
+        "who i am"
       ]
     },
     "meta_reflection": {
@@ -37,10 +37,10 @@
       ],
       "avg_confidence": 0.2086693548387097,
       "keywords": [
+        "awareness",
         "self-aware",
         "reflection",
         "consciousness",
-        "awareness",
         "meta",
         "introspection"
       ]
@@ -56,17 +56,17 @@
       ],
       "avg_confidence": 0.29583975346687297,
       "keywords": [
-        "understand",
+        "cognitive",
+        "learn",
+        "reason",
+        "recall",
         "analyze",
+        "adapt",
         "memory",
         "intelligence",
-        "recall",
-        "think",
-        "cognitive",
-        "reason",
-        "adapt",
         "recognize",
-        "learn"
+        "think",
+        "understand"
       ]
     },
     "technical_capability": {
@@ -80,16 +80,16 @@
       ],
       "avg_confidence": 0.24129141886151267,
       "keywords": [
-        "algorithm",
-        "compute",
-        "training",
-        "reservoir",
-        "function",
         "process",
-        "implementation",
         "method",
+        "implementation",
+        "algorithm",
+        "function",
+        "fit",
         "optimize",
-        "fit"
+        "reservoir",
+        "training",
+        "compute"
       ]
     },
     "knowledge_domain": {
@@ -103,15 +103,15 @@
       ],
       "avg_confidence": 0.2603648424543953,
       "keywords": [
-        "fractal",
-        "hypergraph",
-        "pattern",
-        "p-system",
-        "neural",
-        "architecture",
-        "echo state",
         "membrane",
-        "reservoir computing"
+        "neural",
+        "reservoir computing",
+        "hypergraph",
+        "p-system",
+        "echo state",
+        "fractal",
+        "pattern",
+        "architecture"
       ]
     },
     "behavioral_pattern": {
@@ -125,15 +125,15 @@
       ],
       "avg_confidence": 0.20694444444444424,
       "keywords": [
-        "elaborate",
-        "demonstrate",
-        "reference",
-        "explain",
-        "refine",
-        "update",
         "iterate",
+        "demonstrate",
         "maintain",
-        "confirm"
+        "elaborate",
+        "reference",
+        "update",
+        "confirm",
+        "explain",
+        "refine"
       ]
     },
     "personality_trait": {
@@ -148,14 +148,14 @@
       "avg_confidence": 0.17836257309941475,
       "keywords": [
         "accessible",
+        "helpful",
+        "thorough",
+        "adaptive",
         "precise",
         "technical",
-        "detailed",
-        "responsive",
-        "helpful",
         "evolving",
-        "adaptive",
-        "thorough"
+        "responsive",
+        "detailed"
       ]
     },
     "value_principle": {
@@ -169,15 +169,15 @@
       ],
       "avg_confidence": 0.17346123101518743,
       "keywords": [
-        "accuracy",
-        "clarity",
         "improvement",
-        "optimization",
+        "clarity",
         "quality",
-        "precision",
+        "optimization",
         "efficiency",
-        "evolution",
-        "transparency"
+        "transparency",
+        "accuracy",
+        "precision",
+        "evolution"
       ]
     }
   },
@@ -186,5 +186,5 @@
     "elaboration": 80,
     "correction": 2
   },
-  "generated_at": "2025-10-15T01:22:19.448376"
+  "generated_at": "2025-10-15T01:52:44.297573"
 }
