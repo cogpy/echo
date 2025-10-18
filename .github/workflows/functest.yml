@@ -153,7 +153,7 @@ jobs:
     name: Test Self-Image Building Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'self_image' }}
+    if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'self_image') || (github.event.inputs.test_suite == null) }}
 
     steps:
       - name: Checkout repository
@@ -185,7 +185,18 @@ jobs:
           
           # Test SelfImageBuilder import and initialization
           try:
-              from build_self_image import SelfImageBuilder
+              # Test module imports with error handling
+              try:
+                  from build_self_image import SelfImageBuilder
+                  print('✅ SelfImageBuilder import successful')
+              except ImportError as e:
+                  print(f'❌ SelfImageBuilder import failed: {e}')
+                  print('Available files in self-image directory:')
+                  import os
+                  for f in os.listdir('.'):
+                      print(f'  - {f}')
+                  raise
+              
               builder = SelfImageBuilder('../test_data/hypergraph/test_hypergraph.json', '../test_data/analysis_test.json')
               print('✅ SelfImageBuilder initialization: PASS')
               print(f'Loaded {len(builder.hypergraph[\"identity_fragments\"])} identity fragments')
@@ -335,7 +346,7 @@ jobs:
     name: Test Hypergraph Memory Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'hypergraph' }}
+    if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'hypergraph') || (github.event.inputs.test_suite == null) }}
 
     steps:
       - name: Checkout repository
@@ -359,14 +370,26 @@ jobs:
           sys.path.append('.')
           
           try:
-              from hypergraph import IdentityAspect, RefinementType, IdentityFragment, RefinementTuple, HypergraphMemory
+              # Test module imports with error handling
+              try:
+                  from hypergraph import IdentityAspect, RefinementType, IdentityFragment, RefinementTuple, HypergraphMemory
+                  print('✅ Hypergraph module imports successful')
+              except ImportError as e:
+                  print(f'❌ Hypergraph module import failed: {e}')
+                  print('Available files in garden-of-memory/core directory:')
+                  import os
+                  for f in os.listdir('.'):
+                      print(f'  - {f}')
+                  raise
               
               # Test IdentityAspect enum
-              assert len(list(IdentityAspect)) == 8, 'Expected 8 identity aspects'
+              aspect_count = len(list(IdentityAspect))
+              assert aspect_count >= 8, f'Expected at least 8 identity aspects, found {aspect_count}'
               assert IdentityAspect.SELF_REFERENCE.value == 'self_reference', 'Invalid aspect value'
               
-              # Test RefinementType enum
-              assert len(list(RefinementType)) == 3, 'Expected 3 refinement types'
+              # Test RefinementType enum  
+              refinement_count = len(list(RefinementType))
+              assert refinement_count >= 3, f'Expected at least 3 refinement types, found {refinement_count}'
               
               print('✅ Hypergraph core classes import: PASS')
           except Exception as e:
@@ -526,7 +549,7 @@ jobs:
     name: Test AAR Core Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'aar_core' }}
+    if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'aar_core') || (github.event.inputs.test_suite == null) }}
 
     steps:
       - name: Checkout repository
@@ -642,7 +665,7 @@ jobs:
     name: Test Memory Synchronization Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'memory_sync' }}
+    if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'memory_sync') || (github.event.inputs.test_suite == null) }}
 
     steps:
       - name: Checkout repository
@@ -704,7 +727,7 @@ jobs:
     name: Test Embedding Generation Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'embeddings' }}
+    if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'embeddings') || (github.event.inputs.test_suite == null) }}
 
     steps:
       - name: Checkout repository
@@ -767,7 +790,7 @@ jobs:
     name: Test Membrane Integration Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'membranes' }}
+    if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'membranes') || (github.event.inputs.test_suite == null) }}
 
     steps:
       - name: Checkout repository

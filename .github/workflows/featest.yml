@@ -73,10 +73,17 @@ jobs:
           }
           EOF
           
-          cat > test_data/issues/large_issue.json << 'EOF'
+          # Create large issue content
+          large_content="This is a very long issue description that repeats multiple times to test the AI inference system with large inputs. "
+          large_body=""
+          for i in {1..100}; do
+            large_body="$large_body$large_content"
+          done
+          
+          cat > test_data/issues/large_issue.json << EOF
           {
             "title": "Large issue with extensive content for testing AI inference limits",
-            "body": "$(printf 'This is a very long issue description that repeats multiple times to test the AI inference system with large inputs. %.0s' {1..100})"
+            "body": "$large_body"
           }
           EOF
 
@@ -85,22 +92,44 @@ jobs:
         id: basic_inference
         uses: actions/ai-inference@v1
         continue-on-error: true
+        run: |
+          TITLE=$(cat test_data/issues/basic_issue.json | jq -r '.title')
+          BODY=$(cat test_data/issues/basic_issue.json | jq -r '.body')
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "body=$BODY" >> $GITHUB_OUTPUT
+        
+      - name: Run Basic AI Inference Step 2
+        if: matrix.test_scenario == 'basic_issue_summary'
+        id: basic_inference_run
+        uses: actions/ai-inference@v1
+        continue-on-error: true
         with:
           prompt: |
             Summarize the following GitHub issue in one paragraph:
-            Title: $(cat test_data/issues/basic_issue.json | jq -r '.title')
-            Body: $(cat test_data/issues/basic_issue.json | jq -r '.body')
+            Title: ${{ steps.basic_inference.outputs.title }}
+            Body: ${{ steps.basic_inference.outputs.body }}
 
       - name: Test Complex AI Inference - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'complex_issue_summary'
         id: complex_inference
         uses: actions/ai-inference@v1
         continue-on-error: true
+        run: |
+          TITLE=$(cat test_data/issues/complex_issue.json | jq -r '.title')
+          BODY=$(cat test_data/issues/complex_issue.json | jq -r '.body')
+          echo "title=$TITLE" >> $GITHUB_OUTPUT  
+          echo "body=$BODY" >> $GITHUB_OUTPUT
+
+      - name: Run Complex AI Inference Step 2
+        if: matrix.test_scenario == 'complex_issue_summary'
+        id: complex_inference_run
+        uses: actions/ai-inference@v1
+        continue-on-error: true
         with:
           prompt: |
             Analyze and summarize the following complex GitHub issue:
-            Title: $(cat test_data/issues/complex_issue.json | jq -r '.title')
-            Body: $(cat test_data/issues/complex_issue.json | jq -r '.body')
+            Title: ${{ steps.complex_inference.outputs.title }}
+            Body: ${{ steps.complex_inference.outputs.body }}
             
             Please provide:
             1. A brief summary
@@ -112,22 +141,44 @@ jobs:
         id: empty_inference
         uses: actions/ai-inference@v1
         continue-on-error: true
+        run: |
+          TITLE=$(cat test_data/issues/empty_issue.json | jq -r '.title // "No title"')
+          BODY=$(cat test_data/issues/empty_issue.json | jq -r '.body // "No body content"')
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "body=$BODY" >> $GITHUB_OUTPUT
+
+      - name: Run Empty Issue Inference Step 2  
+        if: matrix.test_scenario == 'empty_issue_handling'
+        id: empty_inference_run
+        uses: actions/ai-inference@v1
+        continue-on-error: true
         with:
           prompt: |
             Summarize the following GitHub issue:
-            Title: $(cat test_data/issues/empty_issue.json | jq -r '.title // "No title"')
-            Body: $(cat test_data/issues/empty_issue.json | jq -r '.body // "No body content"')
+            Title: ${{ steps.empty_inference.outputs.title }}
+            Body: ${{ steps.empty_inference.outputs.body }}
 
       - name: Test Large Issue Processing - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'large_issue_handling'
         id: large_inference
         uses: actions/ai-inference@v1
         continue-on-error: true
+        run: |
+          TITLE=$(cat test_data/issues/large_issue.json | jq -r '.title')
+          BODY=$(cat test_data/issues/large_issue.json | jq -r '.body' | head -c 2000)
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "body=${BODY}..." >> $GITHUB_OUTPUT
+
+      - name: Run Large Issue Inference Step 2
+        if: matrix.test_scenario == 'large_issue_handling'  
+        id: large_inference_run
+        uses: actions/ai-inference@v1
+        continue-on-error: true
         with:
           prompt: |
             Summarize this large GitHub issue concisely:
-            Title: $(cat test_data/issues/large_issue.json | jq -r '.title')
-            Body: $(cat test_data/issues/large_issue.json | jq -r '.body' | head -c 2000)...
+            Title: ${{ steps.large_inference.outputs.title }}
+            Body: ${{ steps.large_inference.outputs.body }}
 
       - name: Test Special Characters Handling - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'special_characters'
@@ -234,16 +285,16 @@ jobs:
           # Validate based on test scenario
           case "${{ matrix.test_scenario }}" in
             "basic_issue_summary")
-              validate_output "Basic inference" "${{ steps.basic_inference.outputs.response }}" 20
+              validate_output "Basic inference" "${{ steps.basic_inference_run.outputs.response }}" 20
               ;;
             "complex_issue_summary")
-              validate_output "Complex inference" "${{ steps.complex_inference.outputs.response }}" 50
+              validate_output "Complex inference" "${{ steps.complex_inference_run.outputs.response }}" 50
               ;;
             "empty_issue_handling")
-              validate_output "Empty issue handling" "${{ steps.empty_inference.outputs.response }}" 10
+              validate_output "Empty issue handling" "${{ steps.empty_inference_run.outputs.response }}" 10
               ;;
             "large_issue_handling")
-              validate_output "Large issue processing" "${{ steps.large_inference.outputs.response }}" 30
+              validate_output "Large issue processing" "${{ steps.large_inference_run.outputs.response }}" 30
               ;;
             "special_characters")
               validate_output "Special characters handling" "${{ steps.special_chars_inference.outputs.response }}" 15
