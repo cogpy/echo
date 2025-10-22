@@ -1,0 +1,417 @@
+name: AI Inference Feature Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode to run'
+        required: false
+        default: 'comprehensive'
+        type: choice
+        options:
+          - comprehensive
+          - inference_only
+          - prompt_validation
+          - error_handling
+
+jobs:
+  ai-inference-tests:
+    name: AI Inference Feature Tests
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+      models: read
+      actions: read
+
+    strategy:
+      matrix:
+        test_scenario:
+          - basic_issue_summary
+          - complex_issue_summary
+          - empty_issue_handling
+          - large_issue_handling
+          - special_characters
+          - markdown_content
+          - code_blocks
+          - error_scenarios
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup test environment
+        run: |
+          echo "Setting up AI inference test environment"
+          mkdir -p test_data/issues
+          mkdir -p test_results/inference
+
+      - name: Create test issue data
+        run: |
+          cat > test_data/issues/basic_issue.json << 'EOF'
+          {
+            "title": "Basic test issue for AI inference",
+            "body": "This is a simple test issue to validate the AI inference functionality. It contains basic text and should generate a proper summary."
+          }
+          EOF
+          
+          cat > test_data/issues/complex_issue.json << 'EOF'
+          {
+            "title": "Complex technical issue with multiple components",
+            "body": "## Problem Description\n\nThis is a complex technical issue involving multiple components:\n\n### Components Affected\n- Hypergraph memory system\n- Identity fragment processing\n- AAR core functionality\n\n### Error Details\n```python\ndef process_identity():\n    # Complex processing logic\n    return fragment_data\n```\n\n### Expected Behavior\nThe system should handle identity fragments correctly and maintain consistency across the hypergraph structure.\n\n### Actual Behavior\nIdentity fragments are not being processed properly, leading to inconsistent state in the memory system."
+          }
+          EOF
+          
+          cat > test_data/issues/empty_issue.json << 'EOF'
+          {
+            "title": "",
+            "body": ""
+          }
+          EOF
+          
+          # Create large issue content
+          large_content="This is a very long issue description that repeats multiple times to test the AI inference system with large inputs. "
+          large_body=""
+          for i in {1..100}; do
+            large_body="$large_body$large_content"
+          done
+          
+          cat > test_data/issues/large_issue.json << EOF
+          {
+            "title": "Large issue with extensive content for testing AI inference limits",
+            "body": "$large_body"
+          }
+          EOF
+
+      - name: Test Basic AI Inference - ${{ matrix.test_scenario }}
+        if: matrix.test_scenario == 'basic_issue_summary'
+        id: basic_inference
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        run: |
+          TITLE=$(cat test_data/issues/basic_issue.json | jq -r '.title')
+          BODY=$(cat test_data/issues/basic_issue.json | jq -r '.body')
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "body=$BODY" >> $GITHUB_OUTPUT
+        
+      - name: Run Basic AI Inference Step 2
+        if: matrix.test_scenario == 'basic_issue_summary'
+        id: basic_inference_run
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        with:
+          prompt: |
+            Summarize the following GitHub issue in one paragraph:
+            Title: ${{ steps.basic_inference.outputs.title }}
+            Body: ${{ steps.basic_inference.outputs.body }}
+
+      - name: Test Complex AI Inference - ${{ matrix.test_scenario }}
+        if: matrix.test_scenario == 'complex_issue_summary'
+        id: complex_inference
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        run: |
+          TITLE=$(cat test_data/issues/complex_issue.json | jq -r '.title')
+          BODY=$(cat test_data/issues/complex_issue.json | jq -r '.body')
+          echo "title=$TITLE" >> $GITHUB_OUTPUT  
+          echo "body=$BODY" >> $GITHUB_OUTPUT
+
+      - name: Run Complex AI Inference Step 2
+        if: matrix.test_scenario == 'complex_issue_summary'
+        id: complex_inference_run
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        with:
+          prompt: |
+            Analyze and summarize the following complex GitHub issue:
+            Title: ${{ steps.complex_inference.outputs.title }}
+            Body: ${{ steps.complex_inference.outputs.body }}
+            
+            Please provide:
+            1. A brief summary
+            2. Key technical components mentioned
+            3. The main problem identified
+
+      - name: Test Empty Issue Handling - ${{ matrix.test_scenario }}
+        if: matrix.test_scenario == 'empty_issue_handling'
+        id: empty_inference
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        run: |
+          TITLE=$(cat test_data/issues/empty_issue.json | jq -r '.title // "No title"')
+          BODY=$(cat test_data/issues/empty_issue.json | jq -r '.body // "No body content"')
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "body=$BODY" >> $GITHUB_OUTPUT
+
+      - name: Run Empty Issue Inference Step 2  
+        if: matrix.test_scenario == 'empty_issue_handling'
+        id: empty_inference_run
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        with:
+          prompt: |
+            Summarize the following GitHub issue:
+            Title: ${{ steps.empty_inference.outputs.title }}
+            Body: ${{ steps.empty_inference.outputs.body }}
+
+      - name: Test Large Issue Processing - ${{ matrix.test_scenario }}
+        if: matrix.test_scenario == 'large_issue_handling'
+        id: large_inference
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        run: |
+          TITLE=$(cat test_data/issues/large_issue.json | jq -r '.title')
+          BODY=$(cat test_data/issues/large_issue.json | jq -r '.body' | head -c 2000)
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "body=${BODY}..." >> $GITHUB_OUTPUT
+
+      - name: Run Large Issue Inference Step 2
+        if: matrix.test_scenario == 'large_issue_handling'  
+        id: large_inference_run
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        with:
+          prompt: |
+            Summarize this large GitHub issue concisely:
+            Title: ${{ steps.large_inference.outputs.title }}
+            Body: ${{ steps.large_inference.outputs.body }}
+
+      - name: Test Special Characters Handling - ${{ matrix.test_scenario }}
+        if: matrix.test_scenario == 'special_characters'
+        id: special_chars_inference
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        with:
+          prompt: |
+            Summarize this issue with special characters:
+            Title: "Issue with émojis 🚀 and spëcial chars @#$%"
+            Body: "This issue contains various special characters: émojis (🎯🔧🌟), accented letters (café, naïve), symbols (@#$%^&*), and unicode characters (αβγδε)."
+
+      - name: Test Markdown Content Processing - ${{ matrix.test_scenario }}
+        if: matrix.test_scenario == 'markdown_content'
+        id: markdown_inference
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        with:
+          prompt: |
+            Summarize this markdown-rich issue:
+            Title: "Documentation update needed"
+            Body: |
+              # Main Issue
+              
+              ## Problem
+              - **Bold text** issue
+              - *Italic text* problem
+              - `Code snippets` not working
+              
+              ### Code Block
+              ```python
+              def example_function():
+                  return "test"
+              ```
+              
+              [Link to docs](https://example.com)
+              
+              > This is a blockquote with important information
+
+      - name: Test Code Block Processing - ${{ matrix.test_scenario }}
+        if: matrix.test_scenario == 'code_blocks'
+        id: code_blocks_inference
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        with:
+          prompt: |
+            Summarize this issue containing code blocks:
+            Title: "Bug in identity fragment processing"
+            Body: |
+              The following code is not working properly:
+              
+              ```python
+              class IdentityFragment:
+                  def __init__(self, id, content, confidence):
+                      self.id = id
+                      self.content = content
+                      self.confidence = confidence
+                  
+                  def validate(self):
+                      return self.confidence > 0.5
+              ```
+              
+              Error occurs when calling `fragment.validate()`.
+
+      - name: Test Error Scenarios - ${{ matrix.test_scenario }}
+        if: matrix.test_scenario == 'error_scenarios'
+        id: error_inference
+        uses: actions/ai-inference@v1
+        continue-on-error: true
+        with:
+          prompt: |
+            This is an intentionally malformed prompt to test error handling:
+            Title: ${{ invalid.syntax.here }}
+            Body: {{ unclosed.braces.and.missing.quotes
+
+      - name: Validate Inference Results
+        run: |
+          echo "=== AI Inference Test Results for ${{ matrix.test_scenario }} ==="
+          
+          # Function to validate inference output
+          validate_output() {
+            local step_name="$1"
+            local output="$2"
+            local expected_min_length="$3"
+            
+            echo "Validating $step_name..."
+            
+            if [ -z "$output" ]; then
+              echo "❌ FAIL: No output generated for $step_name"
+              return 1
+            fi
+            
+            local length=${#output}
+            if [ $length -lt $expected_min_length ]; then
+              echo "❌ FAIL: Output too short for $step_name (${length} chars, expected at least ${expected_min_length})"
+              return 1
+            fi
+            
+            echo "✅ PASS: $step_name generated valid output (${length} characters)"
+            echo "Output preview: ${output:0:100}..."
+            return 0
+          }
+          
+          # Validate based on test scenario
+          case "${{ matrix.test_scenario }}" in
+            "basic_issue_summary")
+              validate_output "Basic inference" "${{ steps.basic_inference_run.outputs.response }}" 20
+              ;;
+            "complex_issue_summary")
+              validate_output "Complex inference" "${{ steps.complex_inference_run.outputs.response }}" 50
+              ;;
+            "empty_issue_handling")
+              validate_output "Empty issue handling" "${{ steps.empty_inference_run.outputs.response }}" 10
+              ;;
+            "large_issue_handling")
+              validate_output "Large issue processing" "${{ steps.large_inference_run.outputs.response }}" 30
+              ;;
+            "special_characters")
+              validate_output "Special characters handling" "${{ steps.special_chars_inference.outputs.response }}" 15
+              ;;
+            "markdown_content")
+              validate_output "Markdown content processing" "${{ steps.markdown_inference.outputs.response }}" 25
+              ;;
+            "code_blocks")
+              validate_output "Code blocks processing" "${{ steps.code_blocks_inference.outputs.response }}" 20
+              ;;
+            "error_scenarios")
+              # For error scenarios, we expect the step to fail gracefully
+              if [ "${{ steps.error_inference.outcome }}" = "failure" ]; then
+                echo "✅ PASS: Error scenario handled correctly (step failed as expected)"
+              else
+                echo "⚠️  WARNING: Error scenario did not fail as expected"
+              fi
+              ;;
+          esac
+
+      - name: Save Test Results
+        run: |
+          # Create detailed test results
+          cat > test_results/inference/${{ matrix.test_scenario }}_results.json << EOF
+          {
+            "test_scenario": "${{ matrix.test_scenario }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "outcomes": {
+              "basic_inference": "${{ steps.basic_inference.outcome }}",
+              "complex_inference": "${{ steps.complex_inference.outcome }}",
+              "empty_inference": "${{ steps.empty_inference.outcome }}",
+              "large_inference": "${{ steps.large_inference.outcome }}",
+              "special_chars_inference": "${{ steps.special_chars_inference.outcome }}",
+              "markdown_inference": "${{ steps.markdown_inference.outcome }}",
+              "code_blocks_inference": "${{ steps.code_blocks_inference.outcome }}",
+              "error_inference": "${{ steps.error_inference.outcome }}"
+            },
+            "responses": {
+              "basic_inference": "${{ steps.basic_inference.outputs.response }}",
+              "complex_inference": "${{ steps.complex_inference.outputs.response }}",
+              "empty_inference": "${{ steps.empty_inference.outputs.response }}",
+              "large_inference": "${{ steps.large_inference.outputs.response }}",
+              "special_chars_inference": "${{ steps.special_chars_inference.outputs.response }}",
+              "markdown_inference": "${{ steps.markdown_inference.outputs.response }}",
+              "code_blocks_inference": "${{ steps.code_blocks_inference.outputs.response }}",
+              "error_inference": "${{ steps.error_inference.outputs.response }}"
+            }
+          }
+          EOF
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-inference-test-results-${{ matrix.test_scenario }}
+          path: test_results/
+
+  consolidate-results:
+    name: Consolidate AI Inference Test Results
+    needs: ai-inference-tests
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ai-inference-test-results-*
+          merge-multiple: true
+          path: all_results/
+
+      - name: Generate Test Summary
+        run: |
+          echo "# AI Inference Feature Test Summary" > test_summary.md
+          echo "" >> test_summary.md
+          echo "Generated on: $(date -u)" >> test_summary.md
+          echo "" >> test_summary.md
+          
+          total_tests=0
+          passed_tests=0
+          failed_tests=0
+          
+          echo "## Test Results by Scenario" >> test_summary.md
+          echo "" >> test_summary.md
+          
+          for result_file in all_results/inference/*_results.json; do
+            if [ -f "$result_file" ]; then
+              scenario=$(jq -r '.test_scenario' "$result_file")
+              echo "### $scenario" >> test_summary.md
+              echo "" >> test_summary.md
+              
+              # Count outcomes
+              jq -r '.outcomes | to_entries[] | "\(.key): \(.value)"' "$result_file" | while read outcome; do
+                echo "- $outcome" >> test_summary.md
+                total_tests=$((total_tests + 1))
+                if echo "$outcome" | grep -q "success"; then
+                  passed_tests=$((passed_tests + 1))
+                else
+                  failed_tests=$((failed_tests + 1))
+                fi
+              done
+              echo "" >> test_summary.md
+            fi
+          done
+          
+          echo "## Summary Statistics" >> test_summary.md
+          echo "" >> test_summary.md
+          echo "- Total Tests: $total_tests" >> test_summary.md
+          echo "- Passed: $passed_tests" >> test_summary.md
+          echo "- Failed: $failed_tests" >> test_summary.md
+          echo "- Success Rate: $(( passed_tests * 100 / total_tests ))%" >> test_summary.md
+          
+          cat test_summary.md
+
+      - name: Upload Consolidated Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-inference-test-summary
+          path: |
+            test_summary.md
+            all_results/
