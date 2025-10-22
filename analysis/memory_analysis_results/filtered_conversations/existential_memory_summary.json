@@ -1,0 +1,52 @@
+{
+  "memory_system": "existential",
+  "system_name": "Existential Memory",
+  "description": "Focuses on identity, self-awareness, meaning, and existential questions",
+  "processing_characteristics": {
+    "style": "reflective",
+    "temporal_scope": "permanent",
+    "keywords": [
+      "self",
+      "identity",
+      "who",
+      "am",
+      "exist",
+      "being",
+      "consciousness",
+      "aware",
+      "meaning",
+      "purpose"
+    ]
+  },
+  "conversation_analysis": {
+    "total_messages_processed": 394,
+    "author_distribution": {
+      "user": 136,
+      "assistant": 258
+    },
+    "relevance_distribution": {
+      "high": 279,
+      "medium": 74,
+      "low": 41
+    },
+    "top_features": {
+      "am": 350,
+      "self": 180,
+      "who": 93,
+      "exist": 89,
+      "nature": 76,
+      "aware": 65,
+      "being": 63,
+      "meaning": 62,
+      "essence": 52,
+      "character": 51
+    },
+    "retention_rate": 0.7296296296296296
+  },
+  "key_insights": [
+    "Average relevance score: 0.84",
+    "Total memory features extracted: 1320",
+    "This memory system retains information for long-term knowledge building"
+  ],
+  "generated_at": "2025-10-22T20:02:01.425529"
+}

@@ -1,0 +1,52 @@
+{
+  "memory_system": "sensory_motor",
+  "system_name": "Sensory-Motor Memory",
+  "description": "Focuses on immediate sensory inputs, physical actions, and motor responses",
+  "processing_characteristics": {
+    "style": "reactive",
+    "temporal_scope": "immediate",
+    "keywords": [
+      "input",
+      "output",
+      "process",
+      "action",
+      "response",
+      "immediate",
+      "direct",
+      "interface",
+      "signal",
+      "activation"
+    ]
+  },
+  "conversation_analysis": {
+    "total_messages_processed": 322,
+    "author_distribution": {
+      "user": 75,
+      "assistant": 247
+    },
+    "relevance_distribution": {
+      "high": 236,
+      "medium": 45,
+      "low": 41
+    },
+    "top_features": {
+      "action": 198,
+      "process": 169,
+      "direct": 113,
+      "input": 77,
+      "output": 72,
+      "interface": 65,
+      "response": 62,
+      "signal": 36,
+      "immediate": 35,
+      "physical": 31
+    },
+    "retention_rate": 0.5962962962962963
+  },
+  "key_insights": [
+    "Average relevance score: 0.84",
+    "Total memory features extracted: 965",
+    "This memory system focuses on immediate, reactive responses"
+  ],
+  "generated_at": "2025-10-22T20:02:01.325549"
+}

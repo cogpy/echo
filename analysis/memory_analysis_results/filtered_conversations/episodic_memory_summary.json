@@ -1,0 +1,51 @@
+{
+  "memory_system": "episodic",
+  "system_name": "Episodic Memory",
+  "description": "Focuses on specific events, experiences, and contextual memories",
+  "processing_characteristics": {
+    "style": "reflective",
+    "temporal_scope": "extended",
+    "keywords": [
+      "experience",
+      "event",
+      "episode",
+      "situation",
+      "context",
+      "when",
+      "where",
+      "what",
+      "happened",
+      "occurred"
+    ]
+  },
+  "conversation_analysis": {
+    "total_messages_processed": 405,
+    "author_distribution": {
+      "user": 150,
+      "assistant": 255
+    },
+    "relevance_distribution": {
+      "high": 387,
+      "medium": 3,
+      "low": 15
+    },
+    "top_features": {
+      "where": 222,
+      "time": 186,
+      "what": 169,
+      "when": 137,
+      "context": 124,
+      "example": 82,
+      "event": 78,
+      "sequence": 74,
+      "place": 74,
+      "instance": 71
+    },
+    "retention_rate": 0.75
+  },
+  "key_insights": [
+    "Average relevance score: 0.93",
+    "Total memory features extracted: 1452"
+  ],
+  "generated_at": "2025-10-22T20:02:01.393025"
+}

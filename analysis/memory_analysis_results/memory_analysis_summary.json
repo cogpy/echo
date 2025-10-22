@@ -1,0 +1,97 @@
+{
+  "analysis_type": "Memory System Filtered Conversation Analysis",
+  "source_file": "/home/runner/work/echo/echo/data/conversations/deep_tree_echo_dan_conversation.jsonl",
+  "generated_at": "2025-10-22T19:59:43.792698",
+  "memory_systems": {
+    "sensory_motor": {
+      "total_messages": 540,
+      "processed_messages": 322,
+      "retention_rate": 0.5962962962962963,
+      "avg_relevance": 0.8391304347826086,
+      "key_insights": [
+        "Average relevance score: 0.84",
+        "Total memory features extracted: 965",
+        "This memory system focuses on immediate, reactive responses"
+      ]
+    },
+    "attentional": {
+      "total_messages": 540,
+      "processed_messages": 267,
+      "retention_rate": 0.49444444444444446,
+      "avg_relevance": 0.7510611735330837,
+      "key_insights": [
+        "Average relevance score: 0.75",
+        "Total memory features extracted: 501"
+      ]
+    },
+    "intentional": {
+      "total_messages": 540,
+      "processed_messages": 232,
+      "retention_rate": 0.42962962962962964,
+      "avg_relevance": 0.7770417422867514,
+      "key_insights": [
+        "Average relevance score: 0.78",
+        "Total memory features extracted: 427"
+      ]
+    },
+    "working_memory": {
+      "total_messages": 540,
+      "processed_messages": 372,
+      "retention_rate": 0.6888888888888889,
+      "avg_relevance": 0.7974910394265233,
+      "key_insights": [
+        "Average relevance score: 0.80",
+        "Total memory features extracted: 1166"
+      ]
+    },
+    "semantic": {
+      "total_messages": 540,
+      "processed_messages": 384,
+      "retention_rate": 0.7111111111111111,
+      "avg_relevance": 0.8977247807017544,
+      "key_insights": [
+        "Average relevance score: 0.90",
+        "Total memory features extracted: 1752",
+        "This memory system retains information for long-term knowledge building"
+      ]
+    },
+    "episodic": {
+      "total_messages": 540,
+      "processed_messages": 405,
+      "retention_rate": 0.75,
+      "avg_relevance": 0.9288888888888889,
+      "key_insights": [
+        "Average relevance score: 0.93",
+        "Total memory features extracted: 1452"
+      ]
+    },
+    "procedural": {
+      "total_messages": 540,
+      "processed_messages": 414,
+      "retention_rate": 0.7666666666666667,
+      "avg_relevance": 0.8815408085430968,
+      "key_insights": [
+        "Average relevance score: 0.88",
+        "Total memory features extracted: 1439",
+        "This memory system retains information for long-term knowledge building"
+      ]
+    },
+    "existential": {
+      "total_messages": 540,
+      "processed_messages": 394,
+      "retention_rate": 0.7296296296296296,
+      "avg_relevance": 0.8414106331819396,
+      "key_insights": [
+        "Average relevance score: 0.84",
+        "Total memory features extracted: 1320",
+        "This memory system retains information for long-term knowledge building"
+      ]
+    }
+  },
+  "comparative_insights": [
+    "Short-term memory systems retained 55.2% of conversation on average",
+    "Long-term memory systems retained 73.9% of conversation on average",
+    "Most selective system: intentional",
+    "Most comprehensive system: procedural"
+  ]
+}

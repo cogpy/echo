@@ -1,0 +1,51 @@
+{
+  "memory_system": "intentional",
+  "system_name": "Intentional Memory",
+  "description": "Focuses on goals, plans, intentions, and purposeful behavior",
+  "processing_characteristics": {
+    "style": "integrative",
+    "temporal_scope": "extended",
+    "keywords": [
+      "goal",
+      "plan",
+      "intent",
+      "purpose",
+      "aim",
+      "objective",
+      "target",
+      "desire",
+      "want",
+      "wish"
+    ]
+  },
+  "conversation_analysis": {
+    "total_messages_processed": 232,
+    "author_distribution": {
+      "user": 56,
+      "assistant": 176
+    },
+    "relevance_distribution": {
+      "high": 165,
+      "medium": 22,
+      "low": 45
+    },
+    "top_features": {
+      "goal": 68,
+      "plan": 65,
+      "intent": 55,
+      "purpose": 50,
+      "conscious": 35,
+      "achieve": 32,
+      "want": 29,
+      "objective": 22,
+      "desire": 20,
+      "target": 16
+    },
+    "retention_rate": 0.42962962962962964
+  },
+  "key_insights": [
+    "Average relevance score: 0.78",
+    "Total memory features extracted: 427"
+  ],
+  "generated_at": "2025-10-22T20:02:01.345326"
+}

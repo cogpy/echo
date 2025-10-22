@@ -1,0 +1,52 @@
+{
+  "memory_system": "semantic",
+  "system_name": "Semantic Memory",
+  "description": "Focuses on facts, concepts, knowledge, and general understanding",
+  "processing_characteristics": {
+    "style": "integrative",
+    "temporal_scope": "permanent",
+    "keywords": [
+      "fact",
+      "concept",
+      "knowledge",
+      "understand",
+      "meaning",
+      "definition",
+      "principle",
+      "rule",
+      "law",
+      "theory"
+    ]
+  },
+  "conversation_analysis": {
+    "total_messages_processed": 384,
+    "author_distribution": {
+      "user": 128,
+      "assistant": 256
+    },
+    "relevance_distribution": {
+      "high": 332,
+      "medium": 22,
+      "low": 30
+    },
+    "top_features": {
+      "system": 274,
+      "structure": 188,
+      "framework": 163,
+      "model": 148,
+      "pattern": 124,
+      "knowledge": 124,
+      "understand": 113,
+      "concept": 104,
+      "type": 91,
+      "principle": 75
+    },
+    "retention_rate": 0.7111111111111111
+  },
+  "key_insights": [
+    "Average relevance score: 0.90",
+    "Total memory features extracted: 1752",
+    "This memory system retains information for long-term knowledge building"
+  ],
+  "generated_at": "2025-10-22T20:02:01.376995"
+}
