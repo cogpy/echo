@@ -1,0 +1,51 @@
+{
+  "memory_system": "attentional",
+  "system_name": "Attentional Memory",
+  "description": "Focuses on attention, focus, selection, and filtering of information",
+  "processing_characteristics": {
+    "style": "selective",
+    "temporal_scope": "recent",
+    "keywords": [
+      "focus",
+      "attention",
+      "select",
+      "filter",
+      "concentrate",
+      "priority",
+      "important",
+      "relevant",
+      "significant",
+      "notice"
+    ]
+  },
+  "conversation_analysis": {
+    "total_messages_processed": 267,
+    "author_distribution": {
+      "assistant": 207,
+      "user": 60
+    },
+    "relevance_distribution": {
+      "high": 175,
+      "medium": 18,
+      "low": 74
+    },
+    "top_features": {
+      "focus": 84,
+      "aware": 65,
+      "relevant": 54,
+      "attention": 48,
+      "track": 46,
+      "conscious": 35,
+      "monitor": 34,
+      "select": 23,
+      "observe": 21,
+      "filter": 20
+    },
+    "retention_rate": 0.49444444444444446
+  },
+  "key_insights": [
+    "Average relevance score: 0.75",
+    "Total memory features extracted: 501"
+  ],
+  "generated_at": "2025-10-22T20:02:01.336213"
+}

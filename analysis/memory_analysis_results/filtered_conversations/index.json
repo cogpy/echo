@@ -1,0 +1,42 @@
+{
+  "title": "Memory-Filtered Conversation Analysis - Generated Files",
+  "description": "Index of all generated conversation files and summaries",
+  "generated_at": "2025-10-22T20:02:01.518994",
+  "memory_systems": [
+    "sensory_motor",
+    "attentional",
+    "intentional",
+    "working_memory",
+    "semantic",
+    "episodic",
+    "procedural",
+    "existential"
+  ],
+  "files": {
+    "individual_conversations": [
+      "sensory_motor_filtered_conversation.json",
+      "attentional_filtered_conversation.json",
+      "intentional_filtered_conversation.json",
+      "working_memory_filtered_conversation.json",
+      "semantic_filtered_conversation.json",
+      "episodic_filtered_conversation.json",
+      "procedural_filtered_conversation.json",
+      "existential_filtered_conversation.json"
+    ],
+    "memory_summaries": [
+      "sensory_motor_memory_summary.json",
+      "attentional_memory_summary.json",
+      "intentional_memory_summary.json",
+      "working_memory_memory_summary.json",
+      "semantic_memory_summary.json",
+      "episodic_memory_summary.json",
+      "procedural_memory_summary.json",
+      "existential_memory_summary.json"
+    ],
+    "comparative_analysis": "comparative_multi_memory_conversation.json"
+  },
+  "statistics": {
+    "total_memory_systems": 8,
+    "total_files_generated": 17
+  }
+}

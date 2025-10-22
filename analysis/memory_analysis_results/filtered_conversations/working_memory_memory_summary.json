@@ -1,0 +1,52 @@
+{
+  "memory_system": "working_memory",
+  "system_name": "Working Memory",
+  "description": "Focuses on temporary information manipulation, reasoning, and problem-solving",
+  "processing_characteristics": {
+    "style": "integrative",
+    "temporal_scope": "recent",
+    "keywords": [
+      "remember",
+      "recall",
+      "hold",
+      "maintain",
+      "manipulate",
+      "combine",
+      "integrate",
+      "reason",
+      "solve",
+      "calculate"
+    ]
+  },
+  "conversation_analysis": {
+    "total_messages_processed": 372,
+    "author_distribution": {
+      "user": 114,
+      "assistant": 249,
+      "tool": 9
+    },
+    "relevance_distribution": {
+      "high": 237,
+      "medium": 83,
+      "low": 52
+    },
+    "top_features": {
+      "work": 293,
+      "process": 169,
+      "integrate": 110,
+      "maintain": 88,
+      "current": 83,
+      "active": 78,
+      "hold": 75,
+      "reason": 74,
+      "solve": 49,
+      "combine": 32
+    },
+    "retention_rate": 0.6888888888888889
+  },
+  "key_insights": [
+    "Average relevance score: 0.80",
+    "Total memory features extracted: 1166"
+  ],
+  "generated_at": "2025-10-22T20:02:01.360225"
+}

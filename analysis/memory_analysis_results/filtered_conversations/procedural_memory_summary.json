@@ -1,0 +1,53 @@
+{
+  "memory_system": "procedural",
+  "system_name": "Procedural Memory",
+  "description": "Focuses on skills, procedures, methods, and how-to knowledge",
+  "processing_characteristics": {
+    "style": "integrative",
+    "temporal_scope": "permanent",
+    "keywords": [
+      "procedure",
+      "method",
+      "process",
+      "step",
+      "skill",
+      "technique",
+      "approach",
+      "way",
+      "how",
+      "do"
+    ]
+  },
+  "conversation_analysis": {
+    "total_messages_processed": 414,
+    "author_distribution": {
+      "user": 148,
+      "assistant": 257,
+      "tool": 9
+    },
+    "relevance_distribution": {
+      "high": 339,
+      "medium": 34,
+      "low": 41
+    },
+    "top_features": {
+      "do": 312,
+      "how": 244,
+      "process": 169,
+      "way": 154,
+      "step": 117,
+      "implement": 94,
+      "approach": 87,
+      "perform": 63,
+      "skill": 38,
+      "method": 35
+    },
+    "retention_rate": 0.7666666666666667
+  },
+  "key_insights": [
+    "Average relevance score: 0.88",
+    "Total memory features extracted: 1439",
+    "This memory system retains information for long-term knowledge building"
+  ],
+  "generated_at": "2025-10-22T20:02:01.409225"
+}
