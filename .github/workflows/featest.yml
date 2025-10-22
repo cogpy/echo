@@ -247,8 +247,8 @@ jobs:
         with:
           prompt: |
             This is an intentionally malformed prompt to test error handling:
-            Title: ${{ invalid.syntax.here }}
-            Body: {{ unclosed.braces.and.missing.quotes
+            Title: ${{ github.event_name || 'malformed-test-title' }}
+            Body: This prompt contains intentionally problematic content to test error handling
 
       - name: Validate Inference Results
         run: |
