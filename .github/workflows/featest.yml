@@ -87,10 +87,9 @@ jobs:
           }
           EOF
 
-      - name: Test Basic AI Inference - ${{ matrix.test_scenario }}
+      - name: Prepare Basic Issue Data - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'basic_issue_summary'
-        id: basic_inference
-        uses: actions/ai-inference@v1
+        id: basic_data
         continue-on-error: true
         run: |
           TITLE=$(cat test_data/issues/basic_issue.json | jq -r '.title')
@@ -98,7 +97,7 @@ jobs:
           echo "title=$TITLE" >> $GITHUB_OUTPUT
           echo "body=$BODY" >> $GITHUB_OUTPUT
         
-      - name: Run Basic AI Inference Step 2
+      - name: Run Basic AI Inference - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'basic_issue_summary'
         id: basic_inference_run
         uses: actions/ai-inference@v1
@@ -106,13 +105,12 @@ jobs:
         with:
           prompt: |
             Summarize the following GitHub issue in one paragraph:
-            Title: ${{ steps.basic_inference.outputs.title }}
-            Body: ${{ steps.basic_inference.outputs.body }}
+            Title: ${{ steps.basic_data.outputs.title }}
+            Body: ${{ steps.basic_data.outputs.body }}
 
-      - name: Test Complex AI Inference - ${{ matrix.test_scenario }}
+      - name: Prepare Complex Issue Data - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'complex_issue_summary'
-        id: complex_inference
-        uses: actions/ai-inference@v1
+        id: complex_data
         continue-on-error: true
         run: |
           TITLE=$(cat test_data/issues/complex_issue.json | jq -r '.title')
@@ -120,7 +118,7 @@ jobs:
           echo "title=$TITLE" >> $GITHUB_OUTPUT  
           echo "body=$BODY" >> $GITHUB_OUTPUT
 
-      - name: Run Complex AI Inference Step 2
+      - name: Run Complex AI Inference - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'complex_issue_summary'
         id: complex_inference_run
         uses: actions/ai-inference@v1
@@ -128,18 +126,17 @@ jobs:
         with:
           prompt: |
             Analyze and summarize the following complex GitHub issue:
-            Title: ${{ steps.complex_inference.outputs.title }}
-            Body: ${{ steps.complex_inference.outputs.body }}
+            Title: ${{ steps.complex_data.outputs.title }}
+            Body: ${{ steps.complex_data.outputs.body }}
             
             Please provide:
             1. A brief summary
             2. Key technical components mentioned
             3. The main problem identified
 
-      - name: Test Empty Issue Handling - ${{ matrix.test_scenario }}
+      - name: Prepare Empty Issue Data - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'empty_issue_handling'
-        id: empty_inference
-        uses: actions/ai-inference@v1
+        id: empty_data
         continue-on-error: true
         run: |
           TITLE=$(cat test_data/issues/empty_issue.json | jq -r '.title // "No title"')
@@ -147,7 +144,7 @@ jobs:
           echo "title=$TITLE" >> $GITHUB_OUTPUT
           echo "body=$BODY" >> $GITHUB_OUTPUT
 
-      - name: Run Empty Issue Inference Step 2  
+      - name: Run Empty Issue Inference - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'empty_issue_handling'
         id: empty_inference_run
         uses: actions/ai-inference@v1
@@ -155,13 +152,12 @@ jobs:
         with:
           prompt: |
             Summarize the following GitHub issue:
-            Title: ${{ steps.empty_inference.outputs.title }}
-            Body: ${{ steps.empty_inference.outputs.body }}
+            Title: ${{ steps.empty_data.outputs.title }}
+            Body: ${{ steps.empty_data.outputs.body }}
 
-      - name: Test Large Issue Processing - ${{ matrix.test_scenario }}
+      - name: Prepare Large Issue Data - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'large_issue_handling'
-        id: large_inference
-        uses: actions/ai-inference@v1
+        id: large_data
         continue-on-error: true
         run: |
           TITLE=$(cat test_data/issues/large_issue.json | jq -r '.title')
@@ -169,7 +165,7 @@ jobs:
           echo "title=$TITLE" >> $GITHUB_OUTPUT
           echo "body=${BODY}..." >> $GITHUB_OUTPUT
 
-      - name: Run Large Issue Inference Step 2
+      - name: Run Large Issue Inference - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'large_issue_handling'  
         id: large_inference_run
         uses: actions/ai-inference@v1
@@ -177,8 +173,8 @@ jobs:
         with:
           prompt: |
             Summarize this large GitHub issue concisely:
-            Title: ${{ steps.large_inference.outputs.title }}
-            Body: ${{ steps.large_inference.outputs.body }}
+            Title: ${{ steps.large_data.outputs.title }}
+            Body: ${{ steps.large_data.outputs.body }}
 
       - name: Test Special Characters Handling - ${{ matrix.test_scenario }}
         if: matrix.test_scenario == 'special_characters'
@@ -323,20 +319,20 @@ jobs:
             "test_scenario": "${{ matrix.test_scenario }}",
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "outcomes": {
-              "basic_inference": "${{ steps.basic_inference.outcome }}",
-              "complex_inference": "${{ steps.complex_inference.outcome }}",
-              "empty_inference": "${{ steps.empty_inference.outcome }}",
-              "large_inference": "${{ steps.large_inference.outcome }}",
+              "basic_inference": "${{ steps.basic_inference_run.outcome }}",
+              "complex_inference": "${{ steps.complex_inference_run.outcome }}",
+              "empty_inference": "${{ steps.empty_inference_run.outcome }}",
+              "large_inference": "${{ steps.large_inference_run.outcome }}",
               "special_chars_inference": "${{ steps.special_chars_inference.outcome }}",
               "markdown_inference": "${{ steps.markdown_inference.outcome }}",
               "code_blocks_inference": "${{ steps.code_blocks_inference.outcome }}",
               "error_inference": "${{ steps.error_inference.outcome }}"
             },
             "responses": {
-              "basic_inference": "${{ steps.basic_inference.outputs.response }}",
-              "complex_inference": "${{ steps.complex_inference.outputs.response }}",
-              "empty_inference": "${{ steps.empty_inference.outputs.response }}",
-              "large_inference": "${{ steps.large_inference.outputs.response }}",
+              "basic_inference": "${{ steps.basic_inference_run.outputs.response }}",
+              "complex_inference": "${{ steps.complex_inference_run.outputs.response }}",
+              "empty_inference": "${{ steps.empty_inference_run.outputs.response }}",
+              "large_inference": "${{ steps.large_inference_run.outputs.response }}",
               "special_chars_inference": "${{ steps.special_chars_inference.outputs.response }}",
               "markdown_inference": "${{ steps.markdown_inference.outputs.response }}",
               "code_blocks_inference": "${{ steps.code_blocks_inference.outputs.response }}",
