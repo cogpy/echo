@@ -25,6 +25,8 @@ jobs:
   setup-test-environment:
     name: Setup Test Environment
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       python-version: ${{ steps.setup.outputs.python-version }}
       test-data-path: ${{ steps.test-data.outputs.test-data-path }}
@@ -153,6 +155,8 @@ jobs:
     name: Test Self-Image Building Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'self_image') || (github.event.inputs.test_suite == null) }}
 
     steps:
@@ -346,6 +350,8 @@ jobs:
     name: Test Hypergraph Memory Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'hypergraph') || (github.event.inputs.test_suite == null) }}
 
     steps:
@@ -549,6 +555,8 @@ jobs:
     name: Test AAR Core Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'aar_core') || (github.event.inputs.test_suite == null) }}
 
     steps:
@@ -665,6 +673,8 @@ jobs:
     name: Test Memory Synchronization Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'memory_sync') || (github.event.inputs.test_suite == null) }}
 
     steps:
@@ -727,6 +737,8 @@ jobs:
     name: Test Embedding Generation Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'embeddings') || (github.event.inputs.test_suite == null) }}
 
     steps:
@@ -790,6 +802,8 @@ jobs:
     name: Test Membrane Integration Functions
     needs: setup-test-environment
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: ${{ (github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'membranes') || (github.event.inputs.test_suite == null) }}
 
     steps:
@@ -839,6 +853,8 @@ jobs:
     name: Generate Comprehensive Test Report
     needs: [test-self-image-functions, test-hypergraph-functions, test-aar-core-functions, test-memory-sync-functions, test-embedding-functions, test-membrane-functions]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: always()
 
     steps:

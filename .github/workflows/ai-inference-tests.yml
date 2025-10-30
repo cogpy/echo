@@ -354,6 +354,8 @@ jobs:
     name: Consolidate AI Inference Test Results
     needs: ai-inference-tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: always()
 
     steps:
