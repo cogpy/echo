@@ -43,3 +43,15 @@ Thumbs.db
 test_data/
 test_results/
 
+# Fine-tuning artifacts
+fine-tuning/echo-finetuned/
+fine-tuning/*-finetuned/
+fine-tuning/prepared_dataset.jsonl
+fine-tuning/openai_format.jsonl
+fine-tuning/*.pt
+fine-tuning/*.bin
+fine-tuning/*.safetensors
+fine-tuning/logs/
+fine-tuning/runs/
+fine-tuning/checkpoints/
+

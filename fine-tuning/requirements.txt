@@ -1,0 +1,31 @@
+# Deep Tree Echo Fine-Tuning Requirements
+#
+# Install all dependencies:
+#   pip install -r requirements.txt
+#
+# For OpenAI fine-tuning only:
+#   pip install -r requirements.txt --no-deps openai
+#
+# For Hugging Face fine-tuning only:
+#   pip install -r requirements.txt --no-deps torch transformers datasets
+
+# Core dependencies (always required)
+# These are used for dataset validation and preparation
+
+# Optional: OpenAI fine-tuning
+openai>=1.0.0
+
+# Optional: Hugging Face fine-tuning
+torch>=2.0.0
+transformers>=4.30.0
+datasets>=2.14.0
+accelerate>=0.20.0
+
+# Optional: For better training performance
+# tensorboard>=2.13.0
+# wandb>=0.15.0
+
+# Development and testing
+# pytest>=7.4.0
+# black>=23.0.0
+# flake8>=6.0.0
