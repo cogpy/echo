@@ -18,7 +18,7 @@ This directory contains GitHub Actions workflows for the Deep Tree Echo reposito
 - **Trigger:** Pushes and PRs to `main` and `develop` branches
 - **Purpose:** Basic Python code quality checks using flake8
 - **Features:**
-  - Detects critical syntax errors (E9, F63, F7, F82)
+  - Detects critical syntax errors (E9, F7, F82)
   - Non-blocking: provides warnings without failing the build
   - Runs on Python 3.11
 - **Status:** ✅ Active and optimized for this repository
