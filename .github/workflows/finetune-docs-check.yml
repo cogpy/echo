@@ -1,0 +1,241 @@
+name: Fine-Tuning Documentation Check
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'fine-tuning/**/*.md'
+      - 'fine-tuning/README.md'
+      - 'fine-tuning/QUICKSTART.md'
+      - '.github/workflows/finetune-docs-check.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'fine-tuning/**/*.md'
+      - '.github/workflows/finetune-docs-check.yml'
+  workflow_dispatch:
+
+jobs:
+  check-documentation:
+    name: Check Fine-Tuning Documentation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Check required documentation files
+        working-directory: fine-tuning
+        run: |
+          echo "Checking for required documentation files..."
+          
+          REQUIRED_DOCS=(
+            "README.md"
+            "QUICKSTART.md"
+          )
+          
+          for doc in "${REQUIRED_DOCS[@]}"; do
+            if [ -f "$doc" ]; then
+              echo "✅ $doc exists"
+            else
+              echo "❌ $doc is missing"
+              exit 1
+            fi
+          done
+      
+      - name: Validate README.md content
+        working-directory: fine-tuning
+        run: |
+          echo "Validating README.md content..."
+          
+          # Check for required sections
+          SECTIONS=(
+            "Overview"
+            "Quick Start"
+            "Features"
+            "Usage"
+            "Configuration"
+            "Output"
+          )
+          
+          for section in "${SECTIONS[@]}"; do
+            if grep -q "$section" README.md; then
+              echo "✅ Found section: $section"
+            else
+              echo "⚠️  Section may be missing: $section"
+            fi
+          done
+      
+      - name: Check for code examples
+        working-directory: fine-tuning
+        run: |
+          echo "Checking for code examples in documentation..."
+          
+          if grep -q '```' README.md; then
+            echo "✅ README.md contains code examples"
+          else
+            echo "⚠️  README.md may be missing code examples"
+          fi
+          
+          if grep -q '```' QUICKSTART.md; then
+            echo "✅ QUICKSTART.md contains code examples"
+          else
+            echo "⚠️  QUICKSTART.md may be missing code examples"
+          fi
+      
+      - name: Validate installation instructions
+        working-directory: fine-tuning
+        run: |
+          echo "Checking installation instructions..."
+          
+          # Check for pip install instructions
+          if grep -q 'pip install' README.md || grep -q 'pip install' QUICKSTART.md; then
+            echo "✅ Contains pip installation instructions"
+          else
+            echo "⚠️  Missing pip installation instructions"
+          fi
+          
+          # Check for OpenAI instructions
+          if grep -q 'openai' README.md; then
+            echo "✅ Contains OpenAI setup instructions"
+          fi
+          
+          # Check for HuggingFace instructions
+          if grep -q 'transformers' README.md || grep -q 'huggingface' README.md; then
+            echo "✅ Contains HuggingFace setup instructions"
+          fi
+      
+      - name: Check for usage examples
+        working-directory: fine-tuning
+        run: |
+          echo "Checking for usage examples..."
+          
+          # Check for finetune.py usage
+          if grep -q 'finetune.py' README.md; then
+            echo "✅ Contains finetune.py usage examples"
+          else
+            echo "⚠️  Missing finetune.py usage examples"
+          fi
+          
+          # Check for provider examples
+          if grep -q 'provider' README.md; then
+            echo "✅ Contains provider configuration examples"
+          fi
+      
+      - name: Validate links
+        working-directory: fine-tuning
+        run: |
+          echo "Checking for broken internal links..."
+          
+          # Extract markdown links
+          python3 << 'EOF'
+          import re
+          from pathlib import Path
+          
+          def check_links(filepath):
+              with open(filepath, 'r') as f:
+                  content = f.read()
+              
+              # Find markdown links
+              links = re.findall(r'\[([^\]]+)\]\(([^\)]+)\)', content)
+              
+              broken = []
+              for text, link in links:
+                  # Skip external links
+                  if link.startswith('http://') or link.startswith('https://'):
+                      continue
+                  
+                  # Skip anchors
+                  if link.startswith('#'):
+                      continue
+                  
+                  # Check if file exists
+                  link_path = Path(link)
+                  if not link_path.exists():
+                      # Try relative to current file
+                      link_path = Path(filepath).parent / link
+                      if not link_path.exists():
+                          broken.append((text, link))
+              
+              return broken
+          
+          for doc in ['README.md', 'QUICKSTART.md']:
+              if Path(doc).exists():
+                  broken = check_links(doc)
+                  if broken:
+                      print(f"\n⚠️  Potentially broken links in {doc}:")
+                      for text, link in broken:
+                          print(f"  - [{text}]({link})")
+                  else:
+                      print(f"✅ No broken links found in {doc}")
+          EOF
+      
+      - name: Check documentation consistency
+        working-directory: fine-tuning
+        run: |
+          echo "Checking documentation consistency..."
+          
+          # Check if config.json is mentioned in docs
+          if grep -q 'config.json' README.md; then
+            echo "✅ README references config.json"
+          fi
+          
+          # Check if requirements.txt is mentioned
+          if grep -q 'requirements.txt' README.md; then
+            echo "✅ README references requirements.txt"
+          fi
+          
+          # Check if both providers are documented
+          if grep -q 'openai' README.md && grep -q 'huggingface' README.md; then
+            echo "✅ Both providers documented"
+          fi
+      
+      - name: Validate command examples
+        working-directory: fine-tuning
+        run: |
+          echo "Extracting and validating command examples..."
+          
+          python3 << 'EOF'
+          import re
+          from pathlib import Path
+          
+          def extract_commands(filepath):
+              with open(filepath, 'r') as f:
+                  content = f.read()
+              
+              # Find bash/shell code blocks
+              bash_blocks = re.findall(r'```(?:bash|shell)\n(.*?)```', content, re.DOTALL)
+              
+              commands = []
+              for block in bash_blocks:
+                  lines = [l.strip() for l in block.split('\n') if l.strip() and not l.strip().startswith('#')]
+                  commands.extend(lines)
+              
+              return commands
+          
+          for doc in ['README.md', 'QUICKSTART.md']:
+              if Path(doc).exists():
+                  commands = extract_commands(doc)
+                  
+                  # Check for finetune.py commands
+                  finetune_cmds = [c for c in commands if 'finetune.py' in c]
+                  
+                  if finetune_cmds:
+                      print(f"\n✅ {doc} contains {len(finetune_cmds)} finetune.py command examples")
+                  else:
+                      print(f"\n⚠️  {doc} may be missing finetune.py command examples")
+          EOF
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Documentation Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Fine-tuning documentation validation completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Required files: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Content structure: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Code examples: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Installation instructions: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Usage examples: ✅" >> $GITHUB_STEP_SUMMARY

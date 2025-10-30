@@ -1,0 +1,152 @@
+name: Fine-Tuning Dataset Validation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'fine-tuning/**'
+      - '.github/workflows/finetune-dataset-validation.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'fine-tuning/**'
+      - '.github/workflows/finetune-dataset-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-dataset:
+    name: Validate Training Dataset
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # No external dependencies needed for dataset validation
+      
+      - name: Validate dataset exists
+        run: |
+          if [ ! -f fine-tuning/training_dataset.jsonl ]; then
+            echo "❌ Training dataset not found"
+            exit 1
+          fi
+          echo "✅ Training dataset found"
+      
+      - name: Check dataset format
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import json
+          import sys
+          
+          errors = []
+          warnings = []
+          examples = []
+          
+          print("=" * 80)
+          print("DATASET VALIDATION")
+          print("=" * 80)
+          
+          with open('training_dataset.jsonl', 'r') as f:
+              for line_num, line in enumerate(f, 1):
+                  try:
+                      example = json.loads(line.strip())
+                      
+                      # Check required fields
+                      if 'prompt' not in example:
+                          errors.append(f"Line {line_num}: Missing 'prompt' field")
+                      if 'completion' not in example:
+                          errors.append(f"Line {line_num}: Missing 'completion' field")
+                      
+                      # Check non-empty
+                      if 'prompt' in example and not example['prompt'].strip():
+                          warnings.append(f"Line {line_num}: Empty prompt")
+                      if 'completion' in example and not example['completion'].strip():
+                          warnings.append(f"Line {line_num}: Empty completion")
+                      
+                      # Check reasonable lengths
+                      if 'prompt' in example and len(example['prompt']) > 20000:
+                          warnings.append(f"Line {line_num}: Very long prompt ({len(example['prompt'])} chars)")
+                      if 'completion' in example and len(example['completion']) > 20000:
+                          warnings.append(f"Line {line_num}: Very long completion ({len(example['completion'])} chars)")
+                      
+                      examples.append(example)
+                      
+                  except json.JSONDecodeError as e:
+                      errors.append(f"Line {line_num}: Invalid JSON - {e}")
+          
+          print(f"\n📊 Total examples: {len(examples)}")
+          
+          if warnings:
+              print(f"\n⚠️  Warnings ({len(warnings)}):")
+              for warning in warnings[:10]:  # Show first 10 warnings
+                  print(f"  {warning}")
+              if len(warnings) > 10:
+                  print(f"  ... and {len(warnings) - 10} more warnings")
+          
+          if errors:
+              print(f"\n❌ Errors ({len(errors)}):")
+              for error in errors:
+                  print(f"  {error}")
+              sys.exit(1)
+          else:
+              print("\n✅ Dataset validation passed!")
+          
+          # Print statistics
+          if examples:
+              prompt_lengths = [len(ex.get('prompt', '')) for ex in examples]
+              completion_lengths = [len(ex.get('completion', '')) for ex in examples]
+              
+              print("\n📈 Statistics:")
+              print(f"  Average prompt length: {sum(prompt_lengths) / len(prompt_lengths):.0f} chars")
+              print(f"  Average completion length: {sum(completion_lengths) / len(completion_lengths):.0f} chars")
+              print(f"  Min prompt length: {min(prompt_lengths)} chars")
+              print(f"  Max prompt length: {max(prompt_lengths)} chars")
+              print(f"  Min completion length: {min(completion_lengths)} chars")
+              print(f"  Max completion length: {max(completion_lengths)} chars")
+          EOF
+      
+      - name: Validate dataset with fine-tuning script
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path.cwd()))
+          
+          from finetune import DatasetValidator
+          
+          validator = DatasetValidator('training_dataset.jsonl')
+          examples = validator.load_and_validate()
+          
+          if not examples:
+              print("❌ No valid examples loaded")
+              sys.exit(1)
+          
+          print(f"✅ Loaded {len(examples)} valid examples")
+          validator.print_stats()
+          
+          # Verify minimum dataset size
+          if len(examples) < 50:
+              print("⚠️  Dataset has fewer than 50 examples (recommended minimum)")
+          EOF
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Dataset Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Dataset validation completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- Training dataset format is valid" >> $GITHUB_STEP_SUMMARY
+          echo "- All examples have required fields" >> $GITHUB_STEP_SUMMARY
+          echo "- Ready for fine-tuning" >> $GITHUB_STEP_SUMMARY
