@@ -162,6 +162,7 @@ jobs:
         working-directory: fine-tuning
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
           if [ -z "$HF_TOKEN" ]; then
             echo "⚠️  HF_TOKEN not set, skipping push to hub"
@@ -185,8 +186,6 @@ jobs:
           
           print(f"✅ Model pushed to HuggingFace Hub: {hub_model_id}")
           EOF
-        env:
-          GITHUB_RUN_NUMBER: ${{ github.run_number }}
       
       - name: Upload model artifact
         if: github.event.inputs.test_mode != 'true'
