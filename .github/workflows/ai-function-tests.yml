@@ -855,31 +855,32 @@ jobs:
           echo "## Test Suite Results" >> test_report.md
           echo "" >> test_report.md
           
-          # Check job outcomes
-          declare -A job_outcomes
-          job_outcomes["self-image"]="${{ needs.test-self-image-functions.result }}"
-          job_outcomes["hypergraph"]="${{ needs.test-hypergraph-functions.result }}"
-          job_outcomes["aar-core"]="${{ needs.test-aar-core-functions.result }}"
-          job_outcomes["memory-sync"]="${{ needs.test-memory-sync-functions.result }}"
-          job_outcomes["embeddings"]="${{ needs.test-embedding-functions.result }}"
-          job_outcomes["membranes"]="${{ needs.test-membrane-functions.result }}"
-          
+          # Check job outcomes directly
           total_suites=0
           passed_suites=0
           
-          for suite in "${!job_outcomes[@]}"; do
-            outcome="${job_outcomes[$suite]}"
+          # Process each test suite result
+          add_result() {
+            local suite_name="$1"
+            local outcome="$2"
             total_suites=$((total_suites + 1))
             
             if [ "$outcome" = "success" ]; then
-              echo "- ✅ $suite: PASSED" >> test_report.md
+              echo "- ✅ $suite_name: PASSED" >> test_report.md
               passed_suites=$((passed_suites + 1))
             elif [ "$outcome" = "skipped" ]; then
-              echo "- ⏭️ $suite: SKIPPED" >> test_report.md
+              echo "- ⏭️ $suite_name: SKIPPED" >> test_report.md
             else
-              echo "- ❌ $suite: FAILED" >> test_report.md
+              echo "- ❌ $suite_name: FAILED" >> test_report.md
             fi
-          done
+          }
+          
+          add_result "Self-Image Functions" "${{ needs.test-self-image-functions.result }}"
+          add_result "Hypergraph Memory Functions" "${{ needs.test-hypergraph-functions.result }}"
+          add_result "AAR Core Functions" "${{ needs.test-aar-core-functions.result }}"
+          add_result "Memory Sync Functions" "${{ needs.test-memory-sync-functions.result }}"
+          add_result "Embedding Functions" "${{ needs.test-embedding-functions.result }}"
+          add_result "Membrane Functions" "${{ needs.test-membrane-functions.result }}"
           
           echo "" >> test_report.md
           echo "## Summary" >> test_report.md
