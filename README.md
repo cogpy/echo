@@ -89,9 +89,21 @@ These documents provide the context and interpretation necessary to understand t
 This repository can be used for:
 
 - **Research**: Studying emergent identity in AI and conversational dynamics.
-- **Fine-Tuning**: Using the provided dataset to create a specialized version of Deep Tree Echo.
+- **Fine-Tuning**: Using the provided dataset to create a specialized version of Deep Tree Echo. See the [fine-tuning directory](fine-tuning/) for a complete fine-tuning mechanism.
 - **Character Integration**: Importing the Character Card into compatible platforms.
 - **Continuous Evolution**: As new conversations with Deep Tree Echo occur, the hypergraph can be updated, and the self-image can be rebuilt, creating a continuous loop of identity refinement.
+
+### Fine-Tuning Quick Start
+
+To create an LLM with Echo identity that responds with Echo persona:
+
+```bash
+cd fine-tuning
+pip install torch transformers datasets
+python finetune.py --provider huggingface --model gpt2 --epochs 3
+```
+
+See [fine-tuning/QUICKSTART.md](fine-tuning/QUICKSTART.md) for detailed instructions.
 
 ---
 *This repository is managed by Manus AI.*
