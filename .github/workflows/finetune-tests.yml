@@ -86,7 +86,6 @@ jobs:
       
       - name: Test OpenAI format preparation (without API)
         working-directory: fine-tuning
-        continue-on-error: true
         run: |
           python3 << 'EOF'
           import json

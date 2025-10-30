@@ -205,8 +205,8 @@ jobs:
               with open(filepath, 'r') as f:
                   content = f.read()
               
-              # Find bash/shell code blocks
-              bash_blocks = re.findall(r'```(?:bash|shell)\n(.*?)```', content, re.DOTALL)
+              # Find bash/shell code blocks (handles various formats)
+              bash_blocks = re.findall(r'```(?:bash|shell|sh)?\s*\n(.*?)```', content, re.DOTALL)
               
               commands = []
               for block in bash_blocks:

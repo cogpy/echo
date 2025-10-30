@@ -285,7 +285,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ OpenAI fine-tuning job submitted successfully" >> $GITHUB_STEP_SUMMARY
           echo "- Base Model: ${{ github.event.inputs.model }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Monitor progress at: https://platform.openai.com/finetune" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor progress in your OpenAI dashboard" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "⚠️  **Note**: Fine-tuning may take several minutes to hours depending on dataset size" >> $GITHUB_STEP_SUMMARY
 
