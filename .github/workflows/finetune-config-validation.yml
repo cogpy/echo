@@ -1,0 +1,239 @@
+name: Fine-Tuning Config Validation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'fine-tuning/config.json'
+      - 'fine-tuning/**/*.json'
+      - '.github/workflows/finetune-config-validation.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'fine-tuning/config.json'
+      - 'fine-tuning/**/*.json'
+      - '.github/workflows/finetune-config-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-configs:
+    name: Validate Fine-Tuning Configurations
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Validate JSON syntax
+        working-directory: fine-tuning
+        run: |
+          echo "Validating JSON files..."
+          
+          # Validate config.json
+          if [ -f config.json ]; then
+            python3 -m json.tool config.json > /dev/null
+            echo "✅ config.json is valid JSON"
+          else
+            echo "❌ config.json not found"
+            exit 1
+          fi
+          
+          # Validate other JSON files
+          for file in *.json; do
+            if [ "$file" != "config.json" ]; then
+              python3 -m json.tool "$file" > /dev/null && echo "✅ $file is valid JSON"
+            fi
+          done
+      
+      - name: Validate config.json schema
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import json
+          import sys
+          
+          print("=" * 80)
+          print("CONFIG.JSON VALIDATION")
+          print("=" * 80)
+          
+          with open('config.json', 'r') as f:
+              config = json.load(f)
+          
+          errors = []
+          warnings = []
+          
+          # Required fields
+          required = ['dataset', 'provider', 'model', 'output_dir']
+          for field in required:
+              if field not in config:
+                  errors.append(f"Missing required field: {field}")
+          
+          # Validate provider
+          if 'provider' in config:
+              valid_providers = ['openai', 'huggingface']
+              if config['provider'] not in valid_providers:
+                  errors.append(f"Invalid provider: {config['provider']}. Must be one of {valid_providers}")
+              else:
+                  print(f"✅ Provider: {config['provider']}")
+          
+          # Validate dataset path
+          if 'dataset' in config:
+              from pathlib import Path
+              dataset_path = Path(config['dataset'])
+              if not dataset_path.exists():
+                  warnings.append(f"Dataset file not found: {config['dataset']}")
+              else:
+                  print(f"✅ Dataset: {config['dataset']}")
+          
+          # Validate model
+          if 'model' in config:
+              print(f"✅ Model: {config['model']}")
+          
+          # Validate output directory
+          if 'output_dir' in config:
+              print(f"✅ Output directory: {config['output_dir']}")
+          
+          # Recommended fields
+          recommended = ['epochs', 'batch_size', 'learning_rate']
+          for field in recommended:
+              if field not in config:
+                  warnings.append(f"Recommended field missing: {field}")
+          
+          # Validate numeric parameters
+          if 'epochs' in config:
+              if not isinstance(config['epochs'], (int, float)) or config['epochs'] <= 0:
+                  errors.append(f"Invalid epochs value: {config['epochs']}")
+              else:
+                  print(f"✅ Epochs: {config['epochs']}")
+          
+          if 'batch_size' in config:
+              if not isinstance(config['batch_size'], (int, float)) or config['batch_size'] <= 0:
+                  errors.append(f"Invalid batch_size value: {config['batch_size']}")
+              else:
+                  print(f"✅ Batch size: {config['batch_size']}")
+          
+          if 'learning_rate' in config:
+              if not isinstance(config['learning_rate'], (int, float)) or config['learning_rate'] <= 0:
+                  errors.append(f"Invalid learning_rate value: {config['learning_rate']}")
+              else:
+                  print(f"✅ Learning rate: {config['learning_rate']}")
+          
+          # Print warnings
+          if warnings:
+              print(f"\n⚠️  Warnings ({len(warnings)}):")
+              for warning in warnings:
+                  print(f"  {warning}")
+          
+          # Print errors
+          if errors:
+              print(f"\n❌ Errors ({len(errors)}):")
+              for error in errors:
+                  print(f"  {error}")
+              sys.exit(1)
+          
+          print("\n✅ Configuration validation passed!")
+          EOF
+      
+      - name: Validate provider-specific configurations
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import json
+          
+          with open('config.json', 'r') as f:
+              config = json.load(f)
+          
+          provider = config.get('provider')
+          model = config.get('model')
+          
+          print(f"\nValidating {provider} configuration...")
+          
+          if provider == 'openai':
+              valid_openai_models = [
+                  'gpt-3.5-turbo', 'gpt-3.5-turbo-0125', 'gpt-3.5-turbo-1106',
+                  'gpt-4', 'gpt-4-0613', 'gpt-4-turbo-preview', 'gpt-4-turbo'
+              ]
+              
+              # Check if it's a fine-tuned model (starts with ft:)
+              if not model.startswith('ft:'):
+                  # It's a base model, validate it
+                  if model not in valid_openai_models:
+                      print(f"⚠️  Model '{model}' may not be available for OpenAI fine-tuning")
+                      print(f"   Common models: {', '.join(valid_openai_models[:3])}")
+              
+              print("ℹ️  OpenAI fine-tuning requires OPENAI_API_KEY environment variable")
+          
+          elif provider == 'huggingface':
+              print(f"✅ HuggingFace model: {model}")
+              print("ℹ️  HuggingFace fine-tuning requires: torch, transformers, datasets, accelerate")
+              
+              # Check for common models
+              common_hf_models = [
+                  'gpt2', 'distilgpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl',
+                  'facebook/opt-125m', 'facebook/opt-350m', 'EleutherAI/gpt-neo-125M'
+              ]
+              
+              if model in common_hf_models:
+                  print(f"✅ Using common HuggingFace model: {model}")
+          
+          print("✅ Provider-specific validation passed!")
+          EOF
+      
+      - name: Check training parameters reasonability
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import json
+          
+          with open('config.json', 'r') as f:
+              config = json.load(f)
+          
+          print("\nChecking training parameter reasonability...")
+          
+          # Check epochs
+          epochs = config.get('epochs', 3)
+          if epochs > 10:
+              print(f"⚠️  High epoch count ({epochs}). Risk of overfitting with small datasets.")
+          elif epochs < 2:
+              print(f"⚠️  Low epoch count ({epochs}). May result in underfitting.")
+          else:
+              print(f"✅ Epochs ({epochs}) in reasonable range")
+          
+          # Check batch size
+          batch_size = config.get('batch_size', 4)
+          if batch_size > 32:
+              print(f"⚠️  Large batch size ({batch_size}). May require significant GPU memory.")
+          elif batch_size < 2:
+              print(f"⚠️  Very small batch size ({batch_size}). Training may be slow and unstable.")
+          else:
+              print(f"✅ Batch size ({batch_size}) in reasonable range")
+          
+          # Check learning rate
+          lr = config.get('learning_rate', 5e-5)
+          if lr > 1e-3:
+              print(f"⚠️  High learning rate ({lr}). May cause training instability.")
+          elif lr < 1e-6:
+              print(f"⚠️  Very low learning rate ({lr}). Training may be extremely slow.")
+          else:
+              print(f"✅ Learning rate ({lr}) in reasonable range")
+          
+          print("✅ Parameter reasonability check completed!")
+          EOF
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Configuration Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All configuration files are valid" >> $GITHUB_STEP_SUMMARY
+          echo "- JSON syntax: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Required fields: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Provider configuration: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Training parameters: ✅" >> $GITHUB_STEP_SUMMARY

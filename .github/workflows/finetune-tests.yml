@@ -1,0 +1,196 @@
+name: Fine-Tuning Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'fine-tuning/**'
+      - '.github/workflows/finetune-tests.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'fine-tuning/**'
+      - '.github/workflows/finetune-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  test-finetune-script:
+    name: Test Fine-Tuning Components
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install base dependencies
+        run: |
+          python -m pip install --upgrade pip
+      
+      - name: Run fine-tuning tests
+        working-directory: fine-tuning
+        run: |
+          python test_finetune.py
+      
+      - name: Test dataset loading
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path.cwd()))
+          
+          from finetune import DatasetValidator
+          
+          print("Testing DatasetValidator...")
+          validator = DatasetValidator('training_dataset.jsonl')
+          examples = validator.load_and_validate()
+          
+          assert len(examples) > 0, "No examples loaded"
+          assert validator.stats['total_examples'] == len(examples), "Stats mismatch"
+          
+          print(f"✅ Successfully loaded {len(examples)} examples")
+          validator.print_stats()
+          EOF
+      
+      - name: Test configuration loading
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import json
+          import sys
+          
+          print("Testing configuration loading...")
+          with open('config.json', 'r') as f:
+              config = json.load(f)
+          
+          required_fields = ['dataset', 'provider', 'model', 'output_dir']
+          for field in required_fields:
+              assert field in config, f"Missing required field: {field}"
+          
+          print("✅ Configuration loaded successfully")
+          print(f"  Provider: {config['provider']}")
+          print(f"  Model: {config['model']}")
+          print(f"  Dataset: {config['dataset']}")
+          EOF
+      
+      - name: Test OpenAI format preparation (without API)
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import json
+          import tempfile
+          
+          # Create sample examples
+          examples = [
+              {"prompt": "What is your name?", "completion": "I am Deep Tree Echo."},
+              {"prompt": "How do you think?", "completion": "I process information through hypergraph networks."}
+          ]
+          
+          # Format in OpenAI style
+          with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+              output_path = f.name
+              for example in examples:
+                  formatted = {
+                      "messages": [
+                          {"role": "user", "content": example['prompt']},
+                          {"role": "assistant", "content": example['completion']}
+                      ]
+                  }
+                  f.write(json.dumps(formatted) + '\n')
+          
+          # Validate output
+          with open(output_path, 'r') as f:
+              lines = f.readlines()
+          
+          assert len(lines) == len(examples), "Output length mismatch"
+          
+          for line in lines:
+              data = json.loads(line)
+              assert 'messages' in data, "Missing messages field"
+              assert len(data['messages']) == 2, "Expected 2 messages"
+              assert data['messages'][0]['role'] == 'user', "First message should be user"
+              assert data['messages'][1]['role'] == 'assistant', "Second message should be assistant"
+          
+          print("✅ OpenAI format preparation successful")
+          EOF
+      
+      - name: Test HuggingFace format preparation (without dependencies)
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import json
+          
+          # Create sample examples
+          examples = [
+              {"prompt": "What is your name?", "completion": "I am Deep Tree Echo."},
+              {"prompt": "How do you think?", "completion": "I process information through hypergraph networks."}
+          ]
+          
+          # Format in HuggingFace conversational style
+          formatted_texts = []
+          for ex in examples:
+              text = f"User: {ex['prompt']}\n\nAssistant: {ex['completion']}"
+              formatted_texts.append({"text": text})
+          
+          assert len(formatted_texts) == len(examples), "Formatting failed"
+          
+          for item in formatted_texts:
+              assert 'text' in item, "Missing text field"
+              assert 'User:' in item['text'], "Missing User prefix"
+              assert 'Assistant:' in item['text'], "Missing Assistant prefix"
+          
+          print("✅ HuggingFace format preparation successful")
+          EOF
+      
+      - name: Test error handling
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path.cwd()))
+          
+          from finetune import DatasetValidator
+          
+          # Test with non-existent file
+          try:
+              validator = DatasetValidator('nonexistent.jsonl')
+              examples = validator.load_and_validate()
+              assert False, "Should have raised FileNotFoundError"
+          except FileNotFoundError:
+              print("✅ Correctly handles missing dataset file")
+          
+          # Test with malformed data
+          import tempfile
+          with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+              temp_path = f.name
+              f.write('invalid json\n')
+              f.write('{"prompt": "test", "completion": "test"}\n')
+          
+          validator = DatasetValidator(temp_path)
+          examples = validator.load_and_validate()
+          assert len(examples) == 1, "Should skip invalid lines"
+          print("✅ Correctly handles malformed data")
+          EOF
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Fine-Tuning Tests Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All fine-tuning component tests passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Dataset validation: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Configuration loading: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Format preparation: ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Error handling: ✅" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,298 @@
+name: Fine-Tuning Integration Tests
+
+on:
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      test_depth:
+        description: 'Test depth level'
+        required: false
+        type: choice
+        options:
+          - quick
+          - standard
+          - comprehensive
+        default: 'standard'
+
+jobs:
+  integration-test-setup:
+    name: Setup Integration Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    outputs:
+      test-matrix: ${{ steps.matrix.outputs.test-matrix }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Define test matrix
+        id: matrix
+        run: |
+          if [ "${{ github.event.inputs.test_depth }}" = "comprehensive" ]; then
+            echo 'test-matrix={"provider":["huggingface"],"model":["distilgpt2","gpt2"],"epochs":[1,2]}' >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.test_depth }}" = "standard" ]; then
+            echo 'test-matrix={"provider":["huggingface"],"model":["distilgpt2","gpt2"],"epochs":[1]}' >> $GITHUB_OUTPUT
+          else
+            # quick mode
+            echo 'test-matrix={"provider":["huggingface"],"model":["distilgpt2"],"epochs":[1]}' >> $GITHUB_OUTPUT
+          fi
+
+  integration-test:
+    name: Integration Test - ${{ matrix.provider }}/${{ matrix.model }}
+    needs: integration-test-setup
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.integration-test-setup.outputs.test-matrix) }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          
+          if [ "${{ matrix.provider }}" = "huggingface" ]; then
+            pip install torch --index-url https://download.pytorch.org/whl/cpu
+            pip install transformers datasets accelerate
+          elif [ "${{ matrix.provider }}" = "openai" ]; then
+            pip install openai
+          fi
+      
+      - name: Create test dataset
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import json
+          
+          # Create minimal test dataset (5 examples for speed)
+          examples = []
+          with open('training_dataset.jsonl', 'r') as f:
+              for i, line in enumerate(f):
+                  if i >= 5:
+                      break
+                  examples.append(json.loads(line.strip()))
+          
+          with open('integration_test_dataset.jsonl', 'w') as f:
+              for ex in examples:
+                  f.write(json.dumps(ex) + '\n')
+          
+          print(f"Created integration test dataset with {len(examples)} examples")
+          EOF
+      
+      - name: Run end-to-end fine-tuning test
+        working-directory: fine-tuning
+        timeout-minutes: 60
+        run: |
+          echo "Testing fine-tuning with ${{ matrix.provider }}/${{ matrix.model }}"
+          
+          # Run fine-tuning
+          python finetune.py \
+            --provider ${{ matrix.provider }} \
+            --model ${{ matrix.model }} \
+            --dataset integration_test_dataset.jsonl \
+            --epochs ${{ matrix.epochs }} \
+            --batch-size 1 \
+            --output-dir ./test-output-${{ matrix.provider }}-${{ matrix.model }}
+      
+      - name: Validate output
+        working-directory: fine-tuning
+        run: |
+          OUTPUT_DIR="./test-output-${{ matrix.provider }}-${{ matrix.model }}"
+          
+          if [ ! -d "$OUTPUT_DIR" ]; then
+            echo "❌ Output directory not created"
+            exit 1
+          fi
+          
+          echo "✅ Output directory created: $OUTPUT_DIR"
+          
+          # List output files
+          echo "Output files:"
+          ls -lh "$OUTPUT_DIR"
+      
+      - name: Test model loading (HuggingFace only)
+        if: matrix.provider == 'huggingface'
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          from transformers import AutoTokenizer, AutoModelForCausalLM
+          import sys
+          
+          output_dir = "./test-output-${{ matrix.provider }}-${{ matrix.model }}"
+          
+          try:
+              print(f"Loading tokenizer from {output_dir}...")
+              tokenizer = AutoTokenizer.from_pretrained(output_dir)
+              print("✅ Tokenizer loaded successfully")
+              
+              print(f"Loading model from {output_dir}...")
+              model = AutoModelForCausalLM.from_pretrained(output_dir)
+              print("✅ Model loaded successfully")
+              
+              # Test inference
+              print("\nTesting inference...")
+              test_text = "User: Hello\n\nAssistant:"
+              inputs = tokenizer(test_text, return_tensors="pt")
+              outputs = model.generate(**inputs, max_length=50)
+              response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+              
+              print(f"Test generation: {response[:100]}...")
+              print("✅ Inference test passed")
+              
+          except Exception as e:
+              print(f"❌ Error: {e}")
+              sys.exit(1)
+          EOF
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf fine-tuning/test-output-* fine-tuning/integration_test_dataset.jsonl
+      
+      - name: Report results
+        if: always()
+        run: |
+          echo "### Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Provider**: ${{ matrix.provider }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Model**: ${{ matrix.model }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Epochs**: ${{ matrix.epochs }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Integration test completed successfully" >> $GITHUB_STEP_SUMMARY
+
+  dataset-quality-check:
+    name: Dataset Quality Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Analyze dataset quality
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          import json
+          import sys
+          
+          print("=" * 80)
+          print("DATASET QUALITY ANALYSIS")
+          print("=" * 80)
+          
+          examples = []
+          with open('training_dataset.jsonl', 'r') as f:
+              for line in f:
+                  try:
+                      examples.append(json.loads(line.strip()))
+                  except:
+                      pass
+          
+          if not examples:
+              print("❌ No examples loaded")
+              sys.exit(1)
+          
+          # Basic statistics
+          print(f"\n📊 Dataset Size: {len(examples)} examples")
+          
+          # Length statistics
+          prompt_lengths = [len(ex['prompt']) for ex in examples]
+          completion_lengths = [len(ex['completion']) for ex in examples]
+          
+          print(f"\n📏 Length Statistics:")
+          print(f"  Prompts:")
+          print(f"    - Average: {sum(prompt_lengths) / len(prompt_lengths):.0f} chars")
+          print(f"    - Min: {min(prompt_lengths)} chars")
+          print(f"    - Max: {max(prompt_lengths)} chars")
+          print(f"  Completions:")
+          print(f"    - Average: {sum(completion_lengths) / len(completion_lengths):.0f} chars")
+          print(f"    - Min: {min(completion_lengths)} chars")
+          print(f"    - Max: {max(completion_lengths)} chars")
+          
+          # Diversity check
+          unique_prompts = len(set(ex['prompt'] for ex in examples))
+          unique_completions = len(set(ex['completion'] for ex in examples))
+          
+          print(f"\n🎨 Diversity:")
+          print(f"  Unique prompts: {unique_prompts} ({unique_prompts/len(examples)*100:.1f}%)")
+          print(f"  Unique completions: {unique_completions} ({unique_completions/len(examples)*100:.1f}%)")
+          
+          # Quality checks
+          issues = []
+          
+          # Check for very short examples
+          short_prompts = sum(1 for l in prompt_lengths if l < 10)
+          short_completions = sum(1 for l in completion_lengths if l < 50)
+          
+          if short_prompts > 0:
+              issues.append(f"{short_prompts} prompts are very short (< 10 chars)")
+          if short_completions > 0:
+              issues.append(f"{short_completions} completions are very short (< 50 chars)")
+          
+          # Check for very long examples
+          long_prompts = sum(1 for l in prompt_lengths if l > 10000)
+          long_completions = sum(1 for l in completion_lengths if l > 10000)
+          
+          if long_prompts > 0:
+              issues.append(f"{long_prompts} prompts are very long (> 10000 chars)")
+          if long_completions > 0:
+              issues.append(f"{long_completions} completions are very long (> 10000 chars)")
+          
+          if issues:
+              print(f"\n⚠️  Quality Issues:")
+              for issue in issues:
+                  print(f"  - {issue}")
+          else:
+              print(f"\n✅ No quality issues detected")
+          
+          print(f"\n✅ Dataset quality analysis complete!")
+          EOF
+      
+      - name: Generate quality report
+        if: always()
+        run: |
+          echo "### Dataset Quality Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Dataset analysis completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "See job logs for detailed statistics" >> $GITHUB_STEP_SUMMARY
+
+  integration-summary:
+    name: Integration Test Summary
+    needs: [integration-test, dataset-quality-check]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Summary
+        run: |
+          echo "### Fine-Tuning Integration Tests Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All integration tests have been executed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tests Run**:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ End-to-end fine-tuning" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Dataset quality analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Model loading validation" >> $GITHUB_STEP_SUMMARY

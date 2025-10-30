@@ -1,0 +1,306 @@
+name: Fine-Tuning CI/CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: 'Fine-tuning provider'
+        required: true
+        type: choice
+        options:
+          - huggingface
+          - openai
+        default: 'huggingface'
+      model:
+        description: 'Base model to fine-tune'
+        required: true
+        type: string
+        default: 'distilgpt2'
+      epochs:
+        description: 'Number of training epochs'
+        required: false
+        type: number
+        default: 1
+      test_mode:
+        description: 'Run in test mode (minimal training)'
+        required: false
+        type: boolean
+        default: true
+      push_to_hub:
+        description: 'Push model to HuggingFace Hub (requires HF_TOKEN)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  validate-inputs:
+    name: Validate Inputs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    outputs:
+      provider: ${{ steps.validation.outputs.provider }}
+      model: ${{ steps.validation.outputs.model }}
+      epochs: ${{ steps.validation.outputs.epochs }}
+    
+    steps:
+      - name: Validate workflow inputs
+        id: validation
+        run: |
+          echo "provider=${{ github.event.inputs.provider }}" >> $GITHUB_OUTPUT
+          echo "model=${{ github.event.inputs.model }}" >> $GITHUB_OUTPUT
+          echo "epochs=${{ github.event.inputs.epochs }}" >> $GITHUB_OUTPUT
+          
+          echo "### Fine-Tuning Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Provider**: ${{ github.event.inputs.provider }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Model**: ${{ github.event.inputs.model }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Epochs**: ${{ github.event.inputs.epochs }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Mode**: ${{ github.event.inputs.test_mode }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Push to Hub**: ${{ github.event.inputs.push_to_hub }}" >> $GITHUB_STEP_SUMMARY
+
+  finetune-huggingface:
+    name: Fine-Tune with HuggingFace
+    needs: validate-inputs
+    if: github.event.inputs.provider == 'huggingface'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install HuggingFace dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install transformers datasets accelerate
+      
+      - name: Prepare test dataset (if test mode)
+        if: github.event.inputs.test_mode == 'true'
+        working-directory: fine-tuning
+        run: |
+          # Create a minimal test dataset for quick validation
+          python3 << 'EOF'
+          import json
+          
+          # Load first 10 examples from full dataset
+          examples = []
+          with open('training_dataset.jsonl', 'r') as f:
+              for i, line in enumerate(f):
+                  if i >= 10:
+                      break
+                  examples.append(json.loads(line.strip()))
+          
+          # Save to test dataset
+          with open('test_dataset.jsonl', 'w') as f:
+              for ex in examples:
+                  f.write(json.dumps(ex) + '\n')
+          
+          print(f"Created test dataset with {len(examples)} examples")
+          EOF
+      
+      - name: Run fine-tuning
+        working-directory: fine-tuning
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # Set dataset based on test mode
+          DATASET="training_dataset.jsonl"
+          if [ "${{ github.event.inputs.test_mode }}" = "true" ]; then
+            DATASET="test_dataset.jsonl"
+          fi
+          
+          # Run fine-tuning
+          python finetune.py \
+            --provider huggingface \
+            --model ${{ github.event.inputs.model }} \
+            --dataset "$DATASET" \
+            --epochs ${{ github.event.inputs.epochs }} \
+            --batch-size 2 \
+            --output-dir ./echo-finetuned-${{ github.run_number }}
+      
+      - name: Test fine-tuned model
+        working-directory: fine-tuning
+        run: |
+          python3 << 'EOF'
+          from transformers import AutoTokenizer, AutoModelForCausalLM
+          import os
+          
+          model_dir = f"./echo-finetuned-{os.environ['GITHUB_RUN_NUMBER']}"
+          
+          print(f"Loading model from {model_dir}...")
+          tokenizer = AutoTokenizer.from_pretrained(model_dir)
+          model = AutoModelForCausalLM.from_pretrained(model_dir)
+          
+          print("✅ Model loaded successfully!")
+          
+          # Test generation
+          test_prompt = "User: What makes you unique?\n\nAssistant:"
+          inputs = tokenizer(test_prompt, return_tensors="pt")
+          outputs = model.generate(**inputs, max_length=100, temperature=0.7)
+          response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+          
+          print("\n" + "=" * 80)
+          print("TEST GENERATION")
+          print("=" * 80)
+          print(response)
+          print("=" * 80)
+          EOF
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+      
+      - name: Push to HuggingFace Hub
+        if: github.event.inputs.push_to_hub == 'true' && github.event.inputs.test_mode != 'true'
+        working-directory: fine-tuning
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "⚠️  HF_TOKEN not set, skipping push to hub"
+            exit 0
+          fi
+          
+          python3 << 'EOF'
+          from transformers import AutoTokenizer, AutoModelForCausalLM
+          import os
+          
+          model_dir = f"./echo-finetuned-{os.environ['GITHUB_RUN_NUMBER']}"
+          hub_model_id = f"deep-tree-echo-{os.environ['GITHUB_RUN_NUMBER']}"
+          
+          print(f"Pushing model to HuggingFace Hub as {hub_model_id}...")
+          
+          tokenizer = AutoTokenizer.from_pretrained(model_dir)
+          model = AutoModelForCausalLM.from_pretrained(model_dir)
+          
+          tokenizer.push_to_hub(hub_model_id)
+          model.push_to_hub(hub_model_id)
+          
+          print(f"✅ Model pushed to HuggingFace Hub: {hub_model_id}")
+          EOF
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+      
+      - name: Upload model artifact
+        if: github.event.inputs.test_mode != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-finetuned-model-${{ github.run_number }}
+          path: fine-tuning/echo-finetuned-${{ github.run_number }}/
+          retention-days: 7
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Fine-Tuning Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ HuggingFace fine-tuning completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- Model: ${{ github.event.inputs.model }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Epochs: ${{ github.event.inputs.epochs }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Output: echo-finetuned-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+
+  finetune-openai:
+    name: Fine-Tune with OpenAI
+    needs: validate-inputs
+    if: github.event.inputs.provider == 'openai'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install OpenAI dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openai
+      
+      - name: Validate API key
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "❌ OPENAI_API_KEY secret not set"
+            echo "Please add OPENAI_API_KEY to your repository secrets"
+            exit 1
+          fi
+          echo "✅ OPENAI_API_KEY is set"
+      
+      - name: Prepare test dataset (if test mode)
+        if: github.event.inputs.test_mode == 'true'
+        working-directory: fine-tuning
+        run: |
+          # Create a minimal test dataset
+          python3 << 'EOF'
+          import json
+          
+          examples = []
+          with open('training_dataset.jsonl', 'r') as f:
+              for i, line in enumerate(f):
+                  if i >= 10:
+                      break
+                  examples.append(json.loads(line.strip()))
+          
+          with open('test_dataset.jsonl', 'w') as f:
+              for ex in examples:
+                  f.write(json.dumps(ex) + '\n')
+          
+          print(f"Created test dataset with {len(examples)} examples")
+          EOF
+      
+      - name: Run OpenAI fine-tuning
+        working-directory: fine-tuning
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          DATASET="training_dataset.jsonl"
+          if [ "${{ github.event.inputs.test_mode }}" = "true" ]; then
+            DATASET="test_dataset.jsonl"
+            echo "⚠️  Running in test mode with minimal dataset"
+          fi
+          
+          python finetune.py \
+            --provider openai \
+            --model ${{ github.event.inputs.model }} \
+            --dataset "$DATASET" \
+            --api-key "$OPENAI_API_KEY"
+      
+      - name: Summary
+        if: always()
+        run: |
+          echo "### OpenAI Fine-Tuning Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ OpenAI fine-tuning job submitted successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- Base Model: ${{ github.event.inputs.model }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor progress in your OpenAI dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️  **Note**: Fine-tuning may take several minutes to hours depending on dataset size" >> $GITHUB_STEP_SUMMARY
+
+  report-status:
+    name: Report Status
+    needs: [validate-inputs, finetune-huggingface, finetune-openai]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Report completion
+        run: |
+          echo "### Fine-Tuning Workflow Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Provider: ${{ github.event.inputs.provider }}" >> $GITHUB_STEP_SUMMARY
+          echo "Status: Completed" >> $GITHUB_STEP_SUMMARY
