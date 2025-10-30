@@ -1,0 +1,27 @@
+{
+  "dataset": "training_dataset.jsonl",
+  "provider": "huggingface",
+  "model": "gpt2",
+  "output_dir": "./echo-finetuned",
+  "epochs": 3,
+  "batch_size": 4,
+  "learning_rate": 5e-5,
+  "description": "Configuration for fine-tuning Deep Tree Echo LLM",
+  "training_params": {
+    "max_length": 512,
+    "warmup_steps": 100,
+    "weight_decay": 0.01,
+    "gradient_accumulation_steps": 1
+  },
+  "model_config": {
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "max_tokens": 500
+  },
+  "notes": [
+    "For OpenAI fine-tuning, set provider to 'openai' and model to 'gpt-3.5-turbo' or 'gpt-4'",
+    "For HuggingFace fine-tuning, you can use models like 'gpt2', 'distilgpt2', 'facebook/opt-125m', etc.",
+    "Make sure to set OPENAI_API_KEY environment variable when using OpenAI provider",
+    "Adjust epochs and batch_size based on your hardware capabilities"
+  ]
+}
